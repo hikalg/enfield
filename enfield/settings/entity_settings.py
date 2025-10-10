@@ -1,0 +1,47 @@
+from typing import Annotated
+from pydantic import Field, Strict
+from pydantic.types import (
+    StringConstraints,
+)
+
+from pydantic_extra_types.country import (
+    CountryAlpha2
+)
+
+from pydantic_extra_types.timezone_name import (
+    TimeZoneName
+)
+
+from pydantic_settings import BaseSettings
+
+class EntitySettings(BaseSettings):
+    entity_default_name: Annotated[
+        str,
+        Strict(),
+        Field(alias="p_name_def", default="player"),
+        StringConstraints(
+            min_length=2, max_length=16, strip_whitespace=True, to_lower=True
+        ),
+    ] = "player"
+    
+    entity_default_description: Annotated[
+        str,
+        Strict(),
+        Field(alias="e_desc_def", default=""),
+        StringConstraints(
+            max_length=2048
+        )
+    ] = ""
+    
+    entity_default_country: Annotated[
+        CountryAlpha2,
+        Field(alias="e_country_def", default='AU')
+    ] = 'AU'
+    
+    entity_default_timezone : Annotated[
+        TimeZoneName,
+        Field(alias="e_timezone_default", default='Australia/Sydney')
+    ] = 'Australia/Sydney'
+    
+print(EntitySettings().model_dump())
+    
