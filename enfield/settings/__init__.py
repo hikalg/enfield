@@ -6,3 +6,5 @@ from .entity_settings import EntitySettings
 # the big meeg
 class Settings(MetaSettings, PlayerSettings, RatingSettings, EntitySettings):
     pass
+
+settings = Settings() # initialises default settings
