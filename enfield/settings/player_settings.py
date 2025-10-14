@@ -1,6 +1,6 @@
 from typing import Annotated
-from pydantic import Field, PositiveInt, PositiveFloat, StrictInt
-from pydantic.types import StringConstraints, Strict
+from pydantic import Field, PositiveInt, PositiveFloat, StrictInt, StrictStr
+from pydantic.types import StringConstraints
 from pydantic_settings import BaseSettings
 from .rating_settings import RatingSettings
 
@@ -12,15 +12,7 @@ PLAYER_DEFAULT_WINS = 0
 PLAYER_DEFAULT_MATCHES = 0
 
 class PlayerSettings(BaseSettings):
-    player_default_name: Annotated[
-        str,
-        Strict(),
-        Field(alias="p_name_def", default="player"),
-        StringConstraints(
-            min_length=2, max_length=16, strip_whitespace=True, to_lower=True
-        ),
-    ] = PLAYER_DEFAULT_NAME
-
+    
     player_default_rating: Annotated[
         PositiveInt,
         Field(alias="p_rating_def", default=RatingSettings().default_rating_players),

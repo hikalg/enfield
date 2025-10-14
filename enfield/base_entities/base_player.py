@@ -26,9 +26,9 @@ class BasePlayer(BaseEntity):
         PositiveFloat, Strict(), Field(alias="p_matches", default=0)
     ] = settings.player_default_match_count
 
-    player_win_count: Annotated[PositiveInt, Strict(), Field(alias="p_wins", default=0)] = (
-        settings.player_default_win_count
-    )
+    player_win_count: Annotated[
+        PositiveInt, Strict(), Field(alias="p_wins", default=0)
+    ] = settings.player_default_win_count
 
     def adjust_rating(self, value: StrictInt = 0):
         self.player_rating = self.player_rating + value
