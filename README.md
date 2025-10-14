@@ -30,10 +30,15 @@ Designed for competitive physical and electronic sports disciplines.
 **The following is managed by `uv`:**
 
 * [Pydantic](https://github.com/pydantic/pydantic)
+
 * [Pydantic Settings](https://github.com/pydantic/pydantic-settings)
+
 * [Pydantic Extra Types](https://github.com/pydantic/pydantic)
+
 * [Typing Extensions](https://github.com/python/typing_extensions)
+
 * [Pycountry](https://github.com/pycountry/pycountry)
+
 * [Tzdata](https://github.com/python/tzdata)
 
 ## Usage
