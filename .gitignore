@@ -12,3 +12,6 @@ wheels/
 # Playgrounds
 playground
 playground.py
+
+# Pytest tests
+tests

@@ -45,7 +45,7 @@ Designed for competitive physical and electronic sports disciplines.
 * Import Enfield in your project:
 
 ```py
-# Import everything?
+# Import everything?cl
 import enfield
 # Or just some bits?
 from enfield import BasePlayer, Match

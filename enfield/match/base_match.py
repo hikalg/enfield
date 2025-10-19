@@ -1,6 +1,6 @@
-from enfield.base_entities import BasePlayer, BaseTeam
-from typing import Annotated
-from pydantic import BaseModel, Field, StrictInt, StrictBool, StrictStr
+from enfield import BasePlayer, BaseTeam
+from typing import Annotated, Union
+from pydantic import BaseModel, Field, StrictInt, StrictBool
 
 # Suggestion for self:
 # - Make player numbering 0/1 instead of natural number 1/2?
@@ -10,41 +10,21 @@ from pydantic import BaseModel, Field, StrictInt, StrictBool, StrictStr
 class BaseMatch(BaseModel):
     # region Variables
 
-    # player_1: Annotated[
-    #     BasePlayer | BaseTeam | list[BasePlayer] | None,
-    #     Field(alias="p1", default=None),
-    # ] = None
+    players: list[Union[BasePlayer, BaseTeam, list[BasePlayer], None]] = Field(
+        default=[]
+    )
 
-    # player_2: Annotated[
-    #     BasePlayer | BaseTeam | list[BasePlayer] | None,#region Variables
-    #     Field(alias="p2", default=None),
-    # ] = None
+    match_score: list[StrictInt] = Field(validation_alias="scores", default=[0, 0])
 
-    players: Annotated[
-        list[BasePlayer | BaseTeam | list[BasePlayer] | None],
-        Field(alias="players", default=[None, None]),
-    ] = [None, None]
-
-    match_score: Annotated[
-        list[StrictInt],
-        Field(
-            alias="scores",
-            default=[0, 0],
-        ),
-    ] = [0, 0]
-
-    match_winner: Annotated[
-        BasePlayer | BaseTeam | list[BasePlayer] | None,
-        Field(alias="winner", default=None),
-    ] = None
+    match_winner: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
+        alias="winner", default=None
+    )
 
     match_draw: Annotated[
         StrictBool,
         Field(
             title="match_draw",
             description="Determine if match is tied",
-            alias="draw",
-            default=False,
         ),
     ] = False
 
@@ -53,43 +33,54 @@ class BaseMatch(BaseModel):
         Field(
             title="match_complete",
             description="Match completion status",
-            alias="done",
-            default=False,
         ),
     ] = False
     # endregion
 
-    def end_match(self, dont_assign_winner: bool = False):
-        # Ends the match and assign winner
+    # Ends the match and assign winner
+    def end_match(
+        self,
+        dont_assign_winner: StrictBool = Field(default=False),
+        dont_assign_draw: StrictBool = Field(default=False),
+        dont_assign_complete: StrictBool = Field(default=False),
+    ):
+        # Comparison logic
+        one_wins_two: StrictBool = self.match_score[0] > self.match_score[1]
+        draw: StrictBool = one_wins_two and (self.match_score[0] == self.match_score[1])
+
         # If dont_assign_winner is true, match_winner remains at None
         if not dont_assign_winner:
             # Comparison logic
-            if self.match_score[0] > self.match_score[1]:
-                self.match_winner = self.players[0]
+            match one_wins_two:
+                case True:
+                    self.match_winner = self.players[0]
+                case False:
+                    if draw:
+                        self.match_winner = None
+                        if not dont_assign_draw:
+                            self.match_draw = True
+                    else:
+                        self.match_winner = self.players[1]
 
-            elif self.match_score[0] < self.match_score[1]:
-                self.match_winner = self.players[1]
-
-            elif self.match_score[0] == self.match_score[1]:
-                self.match_winner = None
-                self.match_draw = True
-
-            else:
-                self.match_winner = None
         # Flags match as complete
-        self.match_complete = True
-        return self.match_winner, self.match_complete
+        if not dont_assign_complete:
+            self.match_complete = True
+        return self.match_winner
 
     # region Scoring
     def score(
-        self, score_p1: StrictInt = 0, score_p2: StrictInt = 0
+        self,
+        score_p1: StrictInt = Field(default=0),
+        score_p2: StrictInt = Field(default=0),
     ) -> list[StrictInt]:
         # No arguments call resets scores to zeroes
         self.match_score = [score_p1, score_p2]
         return self.match_score
 
     def score_player(
-        self, player_slot: StrictInt = -1, score: StrictInt = 0
+        self,
+        player_slot: StrictInt = Field(default=-1),
+        score: StrictInt = Field(default=0),
     ) -> StrictInt:
         if self._validate_player_slot(player_slot):
             self.match_score[player_slot] = score
@@ -102,7 +93,13 @@ class BaseMatch(BaseModel):
     # endregion
 
     # region Player management
-    def change_player(self, player_slot: StrictInt, player):
+    def change_player(
+        self,
+        player_slot: StrictInt = Field(default=-1),
+        player: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
+            default=None
+        ),
+    ):
         if self._validate_player_slot(player_slot):
             self.players[player_slot] = player
             print("Operation successful")
