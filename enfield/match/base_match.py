@@ -14,7 +14,7 @@ class BaseMatch(BaseModel):
         default=[]
     )
 
-    match_score: list[StrictInt] = Field(validation_alias="scores", default=[0, 0])
+    match_score: list[StrictInt] = Field(alias="scores", default=[0, 0])
 
     match_winner: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
         alias="winner", default=None
@@ -40,9 +40,9 @@ class BaseMatch(BaseModel):
     # Ends the match and assign winner
     def end_match(
         self,
-        dont_assign_winner: StrictBool = Field(default=False),
-        dont_assign_draw: StrictBool = Field(default=False),
-        dont_assign_complete: StrictBool = Field(default=False),
+        dont_assign_winner: StrictBool = False,
+        dont_assign_draw: StrictBool = False,
+        dont_assign_complete: StrictBool = False,
     ):
         # Comparison logic
         one_wins_two: StrictBool = self.match_score[0] > self.match_score[1]
@@ -65,16 +65,31 @@ class BaseMatch(BaseModel):
         # Flags match as complete
         if not dont_assign_complete:
             self.match_complete = True
+
         return self.match_winner
 
     # region Scoring
     def score(
         self,
-        score_p1: StrictInt = Field(default=0),
-        score_p2: StrictInt = Field(default=0),
+        p1: int = 0,
+        p2: int = 0,
+        reset: StrictBool = False,
     ) -> list[StrictInt]:
         # No arguments call resets scores to zeroes
-        self.match_score = [score_p1, score_p2]
+
+        # If reset is true, resets all
+
+        score_cache_1 = 0 if (p1 == (None or 0) and reset) else p1 if p1 != 0 else 0
+        score_cache_2 = 0 if (p2 == (None or 0) and reset) else p2 if p1 != 0 else 0
+
+        self.match_score = [
+            self.match_score[0]
+            if (not reset and score_cache_1 != 0)
+            else (score_cache_1),
+            self.match_score[1]
+            if (not reset and score_cache_2 != 0)
+            else (score_cache_2),
+        ]
         return self.match_score
 
     def score_player(
