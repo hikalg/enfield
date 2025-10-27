@@ -15,3 +15,5 @@ playground.py
 
 # Pytest tests
 tests
+enfield.kdev4
+.gitignore

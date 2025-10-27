@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, StrictInt, StrictBool
 class BaseMatch(BaseModel):
     # region Variables
 
-    players: list[Union[BasePlayer, BaseTeam, list[BasePlayer], None]] = Field(
+    players: list[Union[BasePlayer, BaseTeam, None]] = Field(
         default=[]
     )
 
