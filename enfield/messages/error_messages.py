@@ -1,6 +1,5 @@
+from .errorcodes_constants import GENERIC_ERROR
 class GenericError():
     
-    error_code : int = -1
-    
-    def __str__(self) -> str:
-        return f"Error {self.error_code} Operation unsucessful"
+    def __init__(self) -> None:
+        print(f"Error {GENERIC_ERROR} : Operation unsuccessful")
