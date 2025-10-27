@@ -1,5 +1,7 @@
 from enfield import BasePlayer, BaseTeam
+from enfield.messages import GenericSuccess, GenericError
 from typing import Annotated, Union
+from datetime import datetime
 from pydantic import BaseModel, Field, StrictInt, StrictBool
 
 # Suggestion for self:
@@ -19,6 +21,8 @@ class BaseMatch(BaseModel):
     match_winner: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
         alias="winner", default=None
     )
+    
+    match_datetime: datetime = Field(validation_alias='datetime', default=datetime(2025, 11, 25))
 
     match_draw: Annotated[
         StrictBool,
@@ -69,41 +73,27 @@ class BaseMatch(BaseModel):
         return self.match_winner
 
     # region Scoring
+
     def score(
         self,
         p1: int = 0,
         p2: int = 0,
-        reset: StrictBool = False,
+        override: StrictBool = False
     ) -> list[StrictInt]:
-        # No arguments call resets scores to zeroes
+        score_cache = self.match_score
+        
+        # Override switch off: Do not write scores if args are 0
+        if not override:
+            score_cache[0] = p1 if not p1 == 0 else score_cache[0]
+            score_cache[1] = p2 if not p2 == 0 else score_cache[1]
 
-        # If reset is true, resets all
+        # Override switch on: Write anyway
+        if override:
+            score_cache[0] = p1
+            score_cache[1] = p2
 
-        score_cache_1 = 0 if (p1 == (None or 0) and reset) else p1 if p1 != 0 else 0
-        score_cache_2 = 0 if (p2 == (None or 0) and reset) else p2 if p1 != 0 else 0
-
-        self.match_score = [
-            self.match_score[0]
-            if (not reset and score_cache_1 != 0)
-            else (score_cache_1),
-            self.match_score[1]
-            if (not reset and score_cache_2 != 0)
-            else (score_cache_2),
-        ]
+        self.match_score = score_cache
         return self.match_score
-
-    def score_player(
-        self,
-        player_slot: StrictInt = Field(default=-1),
-        score: StrictInt = Field(default=0),
-    ) -> StrictInt:
-        if self._validate_player_slot(player_slot):
-            self.match_score[player_slot] = score
-
-        else:
-            print("Operation unsucessful")
-
-        return self.match_score[player_slot]
 
     # endregion
 
@@ -117,10 +107,10 @@ class BaseMatch(BaseModel):
     ):
         if self._validate_player_slot(player_slot):
             self.players[player_slot] = player
-            print("Operation successful")
+            GenericSuccess()
 
         else:
-            print("Operation unsucessful")
+            GenericError()
 
         return self.players[player_slot]
 
@@ -129,7 +119,7 @@ class BaseMatch(BaseModel):
             self.players[player_slot - 1] = None
 
         else:
-            print("Operatio unsucessful")
+            GenericError()
 
         return self.players[player_slot - 1]
 
