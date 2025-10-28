@@ -28,3 +28,5 @@ class RatingSettings(BaseSettings):
     default_rating_teams: Annotated[
         int, Field(alias="rating_def_players", default=1000)
     ] = 1000
+    
+    

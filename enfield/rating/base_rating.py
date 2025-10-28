@@ -12,12 +12,14 @@ from numpy import median
 # Step 2a: Find ratio against median rating
 # Step 2b: Find ratio against each other
 # Step 2c: Find final ratio
+# Step 3: Apply polarity based on winner
 
 
-class BaseRating():
+class BaseRating:
     match_to_rate: Union[BaseMatch, None]
 
     players_to_rate: list[Union[BasePlayer, BaseTeam, None]] = []
+    winner: Union[BasePlayer, BaseTeam, list[BasePlayer]]
 
     # Data extracts
 
@@ -27,6 +29,11 @@ class BaseRating():
     rating_ratio_to_median: list[Union[int, float]]
     rating_ratio_to_other: list[Union[int, float]]
     scaling_final: list[Union[int, float]]
+    polarity: list[int]
+    weighting: int = 50
+    rating_change: list[int]
+
+    final_ratings: list[int]
 
     def __init__(self, match: BaseMatch) -> None:
         self.match_to_rate = match
@@ -36,6 +43,12 @@ class BaseRating():
         self.rating_ratio_to_median = self.find_ratio_to_median()
         self.rating_ratio_to_other = self.find_ratio_to_other()
         self.scaling_final = self.find_final_ratio()
+        self.polarity = self.find_polarity()
+        self.rating_change = self.calculate_change()
+        self.final_ratings = self.calculate_final_rating()
+        
+    def find_winner(self):
+        return self.match_to_rate.match_winner if type(self.match_to_rate) != None else None
 
     # region Step 1
     # Step 1a
@@ -102,9 +115,46 @@ class BaseRating():
         final_ratio = []
         for x in range(len(self.players_to_rate)):
             final_ratio.append(
-                self.rating_ratio_to_median[x] * self.rating_ratio_to_other[x]
+                round(self.rating_ratio_to_median[x] * self.rating_ratio_to_other[x], 2)
             )
 
         return final_ratio
+
+    def find_polarity(self) -> list:
+
+        winner = (
+            0
+            if self.winner == self.players_to_rate[0]
+            else 1 if self.winner == self.players_to_rate[1] else -1
+        )
+
+        match winner:
+            case 0:
+                return [1, -1]
+            case 1:
+                return [-1, 1]
+            case _:
+                return [0, 0]
+
+    def calculate_change(self) -> list:
+
+        changes = []
+
+        for x in range(len(self.players_to_rate)):
+            changes.append(
+                int(self.polarity[x] * self.scaling_final[x] * self.weighting)
+            )
+
+        return changes
+
+    def calculate_final_rating(self) -> list:
+        final_ratings = []
+
+        for x in range(len(self.players_to_rate)):
+            final_ratings.append(
+                self.old_ratings_to_calculate[x] + self.rating_change[x]
+            )
+
+        return final_ratings
 
     # endregion
