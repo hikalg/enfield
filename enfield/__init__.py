@@ -5,3 +5,7 @@ from .base_entities import (
 )
 
 from .match import BaseMatch
+
+from .settings import settings as EnfieldSettings
+
+from .rating import BaseRating

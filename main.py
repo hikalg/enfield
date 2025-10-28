@@ -1,18 +1,20 @@
-from enfield.base_entities import BasePlayer
-from enfield.base_entities.base_entity import BaseEntity
-from enfield.match.base_match import BaseMatch
-from enfield.messages import GenericError
+from enfield import BasePlayer, BaseTeam, BaseRating, EnfieldSettings, BaseMatch
 
 # from enfield 
 
-player1 = BasePlayer(name="thinkpad")
-player2 = BasePlayer(name="framework")
+player1 = BasePlayer(name="thinkpad", player_rating=2000)
+player2 = BasePlayer(name="framework", player_rating=1600)
 
 match1 = BaseMatch(players=[player1, player2], scores=[2, 1])
 
+rating1 = BaseRating(match1)
+
+print(rating1.rating_median)
+print(rating1.scaling_final)
+
 # print(match1.match_score)
 # match1.score(p1=2, p2=4)
-match1.score(p2=6, override=True)
+# match1.score(p2=6, override=True)
 # print(match1.score(p1=8, reset=False))
 
 # print(match1.score(reset=True))
