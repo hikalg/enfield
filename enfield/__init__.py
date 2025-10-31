@@ -6,6 +6,6 @@ from .base_entities import (
 
 from .match import BaseMatch
 
-from .settings import settings as EnfieldSettings
+from .settings import settings as UserSettings
 
 from .rating import BaseRating

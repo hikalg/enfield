@@ -1,5 +1,5 @@
-from enfield import BaseMatch, BasePlayer, BaseTeam, EnfieldSettings
-from pydantic import StrictInt, StrictFloat
+from enfield import BaseMatch, BasePlayer, BaseTeam, UserSettings
+from pydantic import BaseModel, StrictInt, StrictFloat
 from typing import Annotated, Union, Final
 from numpy import median
 
@@ -15,11 +15,12 @@ from numpy import median
 # Step 3: Apply polarity based on winner
 
 
-class BaseRating:
+class BaseRating():
     match_to_rate: Union[BaseMatch, None]
 
     players_to_rate: list[Union[BasePlayer, BaseTeam, None]] = []
-    winner: Union[BasePlayer, BaseTeam, list[BasePlayer]]
+
+    winner: Union[BasePlayer, BaseTeam, list[BasePlayer], None]
 
     # Data extracts
 
@@ -37,6 +38,7 @@ class BaseRating:
 
     def __init__(self, match: BaseMatch) -> None:
         self.match_to_rate = match
+        self.winner = self.find_winner()
         self.players_to_rate = self.retrieve_players()
         self.old_ratings_to_calculate = self.retrieve_old_ratings()
         self.rating_median = self.find_median()
@@ -46,18 +48,20 @@ class BaseRating:
         self.polarity = self.find_polarity()
         self.rating_change = self.calculate_change()
         self.final_ratings = self.calculate_final_rating()
-        
+
     def find_winner(self):
-        return self.match_to_rate.match_winner if type(self.match_to_rate) != None else None
+        return (
+            self.match_to_rate.match_winner if self.match_to_rate is not None else None
+        )
 
     # region Step 1
     # Step 1a
     def retrieve_players(self) -> list:
-        return (
-            self.match_to_rate.players
-            if isinstance(self.match_to_rate, BaseMatch)
-            else []
-        )
+
+        if isinstance(self.match_to_rate, BaseMatch):
+            return self.match_to_rate.players
+        else:
+            return []
 
     # Step 1b
     def retrieve_old_ratings(self) -> list:
@@ -71,7 +75,7 @@ class BaseRating:
                 else (
                     x.team_rating
                     if isinstance(x, BaseTeam)
-                    else EnfieldSettings.player_default_rating
+                    else UserSettings.player_default_rating
                 )
             )
 
@@ -135,6 +139,7 @@ class BaseRating:
                 return [-1, 1]
             case _:
                 return [0, 0]
+
 
     def calculate_change(self) -> list:
 

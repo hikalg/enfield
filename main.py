@@ -1,11 +1,11 @@
-from enfield import BasePlayer, BaseTeam, BaseRating, EnfieldSettings, BaseMatch
+from enfield import BasePlayer, BaseTeam, BaseRating, UserSettings, BaseMatch
 
 # from enfield 
 
 player1 = BasePlayer(name="thinkpad", player_rating=2000)
 player2 = BasePlayer(name="framework", player_rating=1600)
 
-match1 = BaseMatch(players=[player1, player2], scores=[2, 1])
+match1 = BaseMatch(players=[player1, player2], scores=[1, 2])
 match1.end_match()
 
 rating1 = BaseRating(match1)

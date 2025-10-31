@@ -4,6 +4,7 @@ from typing import Annotated, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, StrictInt, StrictBool
 
+
 # Suggestion for self:
 # - Make player numbering 0/1 instead of natural number 1/2?
 # - Find a way to effectively store players (dict, NamedTuple)
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field, StrictInt, StrictBool
 class BaseMatch(BaseModel):
     # region Variables
 
-    players: list[Union[BasePlayer, BaseTeam, None]] = Field(
+    players: list[Union[BasePlayer, BaseTeam, list[BasePlayer], None]] = Field(
         default=[]
     )
 
@@ -39,6 +40,7 @@ class BaseMatch(BaseModel):
             description="Match completion status",
         ),
     ] = False
+
     # endregion
 
     # Ends the match and assign winner
@@ -99,11 +101,11 @@ class BaseMatch(BaseModel):
 
     # region Player management
     def change_player(
-        self,
-        player_slot: StrictInt = Field(default=-1),
-        player: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
-            default=None
-        ),
+            self,
+            player_slot: StrictInt = -1,
+            player: Union[BasePlayer, BaseTeam, list[BasePlayer], None] = Field(
+                default=None
+            ),
     ):
         if self._validate_player_slot(player_slot):
             self.players[player_slot] = player
