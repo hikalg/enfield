@@ -4,15 +4,15 @@ from enfield import BasePlayer, BaseTeam, BaseRating, UserSettings, BaseMatch
 
 player1 = BasePlayer(name="thinkpad", player_rating=2000)
 player2 = BasePlayer(name="framework", player_rating=1600)
-
 match1 = BaseMatch(players=[player1, player2], scores=[1, 2])
 match1.end_match()
 
-rating1 = BaseRating(match1)
+# rating1 = BaseRating(match1)
 
-print(rating1.rating_median)
-print(rating1.scaling_final)
-print(rating1.final_ratings)
+rating1 = BaseRating(1500, 1700, 0)
+
+print(rating1._final_ratings)
+print(rating1.get_final_ratings())
 
 # print(match1.match_score)
 # match1.score(p1=2, p2=4)

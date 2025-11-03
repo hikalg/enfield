@@ -1,5 +1,5 @@
 from enfield import BaseMatch, BasePlayer, BaseTeam, UserSettings
-from pydantic import BaseModel, StrictInt, StrictFloat
+from pydantic import BaseModel, StrictInt, StrictFloat, Field
 from typing import Annotated, Union, Final
 from numpy import median
 
@@ -15,88 +15,78 @@ from numpy import median
 # Step 3: Apply polarity based on winner
 
 
-class BaseRating():
-    match_to_rate: Union[BaseMatch, None]
+class BaseRating(BaseModel):
+    old_ratings: list[StrictInt] = Field(default=[0, 0])
 
-    players_to_rate: list[Union[BasePlayer, BaseTeam, None]] = []
+    winner: StrictInt | StrictFloat = Field()
 
-    winner: Union[BasePlayer, BaseTeam, list[BasePlayer], None]
+    weighting: StrictInt = Field(default=UserSettings.rating_weighting)
 
-    # Data extracts
+    scaling: StrictFloat = Field(default=UserSettings.rating_scaling_multiplier)
 
-    old_ratings_to_calculate: list[StrictInt] = []
+    def __init__(self, r1, r2, w):
+        super().__init__(old_ratings=[r1, r2], winner=w)
 
-    rating_median: Union[int, float]
-    rating_ratio_to_median: list[Union[int, float]]
-    rating_ratio_to_other: list[Union[int, float]]
-    scaling_final: list[Union[int, float]]
-    polarity: list[int]
-    weighting: int = 50
-    rating_change: list[int]
+        self._rating_median = self.find_median()
+        self._rating_ratio_to_median = self.find_ratio_to_median()
+        self._rating_ratio_to_other = self.find_ratio_to_other()
+        self._scaling_final = self.find_final_ratio()
+        self._polarity = self.find_polarity()
+        self._rating_change = self.calculate_change()
+        self._final_ratings = self.calculate_final_rating()
 
-    final_ratings: list[int]
+    # region Return functions
 
-    def __init__(self, match: BaseMatch) -> None:
-        self.match_to_rate = match
-        self.winner = self.find_winner()
-        self.players_to_rate = self.retrieve_players()
-        self.old_ratings_to_calculate = self.retrieve_old_ratings()
-        self.rating_median = self.find_median()
-        self.rating_ratio_to_median = self.find_ratio_to_median()
-        self.rating_ratio_to_other = self.find_ratio_to_other()
-        self.scaling_final = self.find_final_ratio()
-        self.polarity = self.find_polarity()
-        self.rating_change = self.calculate_change()
-        self.final_ratings = self.calculate_final_rating()
+    def get_old_ratings(self, slot: int = -1) -> list[int] | int:
+        return self.old_ratings[slot] if slot == 1 or 2 else self.old_ratings
 
-    def find_winner(self):
-        return (
-            self.match_to_rate.match_winner if self.match_to_rate is not None else None
-        )
+    def get_fixed_scaling_values(self) -> float:
+        return self.weighting * self.scaling
 
-    # region Step 1
-    # Step 1a
-    def retrieve_players(self) -> list:
+    def get_median(self) -> float:
+        return self._rating_median
 
-        if isinstance(self.match_to_rate, BaseMatch):
-            return self.match_to_rate.players
-        else:
-            return []
-
-    # Step 1b
-    def retrieve_old_ratings(self) -> list:
-
-        rating_queue = []
-
-        for x in self.players_to_rate:
-            rating_queue.append(
-                x.player_rating
-                if isinstance(x, BasePlayer)
-                else (
-                    x.team_rating
-                    if isinstance(x, BaseTeam)
-                    else UserSettings.player_default_rating
+    # Get ratio values. If slot is not 0 or 1 return list
+    def get_ratio(self, type: str = "", slot: int = -1) -> list[float] | float:
+        match type:
+            case "median" | "m":
+                return (
+                    self._rating_ratio_to_median[slot]
+                    if slot == 1 or 2
+                    else self._rating_ratio_to_median
                 )
-            )
+            case "against" | "a":
+                return (
+                    self._rating_ratio_to_other[slot]
+                    if slot == 1 or 2
+                    else self._rating_ratio_to_other
+                )
+            case _:
+                raise ValueError("Invalid type")
 
-        return rating_queue
+    def get_polarity(self, slot: int = -1) -> list[int] | int:
+        return self._polarity[slot] if slot == (0 or 1) else self._polarity
+
+    def get_rating_change(self, slot: int = -1) -> list[int] | int:
+        return self._rating_change[slot] if slot == (0 or 1) else self._rating_change
+
+    def get_final_ratings(self, slot: int = -1):
+        return self._final_ratings[slot] if slot == (0 or 1) else self._final_ratings
+
+    # def get_polarity
 
     # endregion
     # region Step 2
     def find_median(self) -> Union[int, float]:
-        return (
-            float(median(self.old_ratings_to_calculate))
-            if self.old_ratings_to_calculate
-            else 0
-        )
+        return float(median(self.old_ratings)) if self.old_ratings else 0
 
     def find_ratio_to_median(self) -> list:
         ratio_queue = []
 
-        for x in self.old_ratings_to_calculate:
+        for x in self.old_ratings:
             (
-                ratio_queue.append(x / self.rating_median)
-                if (x or self.rating_median) != 0
+                ratio_queue.append(x / self._rating_median)
+                if (x or self._rating_median) != 0
                 else 0
             )
 
@@ -105,9 +95,9 @@ class BaseRating():
     def find_ratio_to_other(self) -> list:
         rating_0 = 0
         rating_1 = 0
-        if all(x != 0 for x in self.old_ratings_to_calculate):
-            rating_0 = self.old_ratings_to_calculate[0]
-            rating_1 = self.old_ratings_to_calculate[1]
+        if all(x != 0 for x in self.old_ratings):
+            rating_0 = self.old_ratings[0]
+            rating_1 = self.old_ratings[1]
 
         return (
             [rating_0 / rating_1, rating_1 / rating_0]
@@ -117,22 +107,19 @@ class BaseRating():
 
     def find_final_ratio(self) -> list:
         final_ratio = []
-        for x in range(len(self.players_to_rate)):
+        for x in range(len(self.old_ratings)):
             final_ratio.append(
-                round(self.rating_ratio_to_median[x] * self.rating_ratio_to_other[x], 2)
+                # Combine ratios to median and against selves, then round to the nearest 2 decimal pts
+                round(
+                    self._rating_ratio_to_median[x] * self._rating_ratio_to_other[x], 2
+                )
             )
 
         return final_ratio
 
     def find_polarity(self) -> list:
-
-        winner = (
-            0
-            if self.winner == self.players_to_rate[0]
-            else 1 if self.winner == self.players_to_rate[1] else -1
-        )
-
-        match winner:
+        # TODO: Figure out polarity logic on draws (0.5). Assume: half polarity (0.5), higher rated player receives negative polarity, and vice versa.
+        match self.winner:
             case 0:
                 return [1, -1]
             case 1:
@@ -140,25 +127,38 @@ class BaseRating():
             case _:
                 return [0, 0]
 
-
     def calculate_change(self) -> list:
 
         changes = []
 
-        for x in range(len(self.players_to_rate)):
+        for x in range(len(self.old_ratings)):
+            # Calculate rating change using the following formula:
+            # Polarity (+1/-1) * Default Scaling * Ratio Scaling * Weighting
             changes.append(
-                int(self.polarity[x] * self.scaling_final[x] * self.weighting)
+                int(self._polarity[x] * self._scaling_final[x] * self.weighting)
             )
 
         return changes
 
-    def calculate_final_rating(self) -> list:
+    def calculate_final_rating(self, override_limit: bool = False) -> list:
         final_ratings = []
 
-        for x in range(len(self.players_to_rate)):
-            final_ratings.append(
-                self.old_ratings_to_calculate[x] + self.rating_change[x]
-            )
+        for x in range(len(self.old_ratings)):
+            final_rating = self.old_ratings[x] + self._rating_change[x]
+
+        # Apply constraints to calculation results. If override is set to True raw values are returned
+        
+            if final_rating > UserSettings.rating_max_players:
+                final_rating = (
+                    UserSettings.rating_max_players if not override_limit else final_rating
+                )
+
+            if final_rating < UserSettings.rating_min_players:
+                final_rating = (
+                    UserSettings.rating_min_players if not override_limit else final_rating
+                )
+
+            final_ratings.append(final_rating)
 
         return final_ratings
 

@@ -12,12 +12,10 @@ class Settings(MetaSettings, PlayerSettings, RatingSettings, EntitySettings):
 
 
 settings = Settings(
-    # --------------
-    # Meta Settings
     meta_name="enfield",
     meta_disciplines=[],
-    # --------------
-    # Entity Settings
     entity_default_name="player",
     entity_default_country=CountryAlpha2("AU"),
+    rating_weighting=50,
+    rating_scaling_multiplier=1.0,
 )

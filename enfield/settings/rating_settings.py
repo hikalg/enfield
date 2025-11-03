@@ -1,32 +1,25 @@
 from typing import Annotated
-from pydantic import Field
-from pydantic.types import StringConstraints, Strict
+from pydantic import Field, StrictInt, StrictFloat
 from pydantic_settings import BaseSettings
+
+# Minimum and maximum rating thresholds are determined by dividing/multiplying the default rating by the scalar value.
+SCALAR = 5
 
 
 class RatingSettings(BaseSettings):
-    rating_minimum_players: Annotated[
-        int, Field(alias="min_rating_players", default=500)
-    ] = 500
 
-    rating_maximum_players: Annotated[
-        int, Field(alias="max_rating_players", default=5000)
-    ] = (rating_minimum_players * 10)
+    default_rating_players: StrictInt = Field(default=1000)
 
-    rating_minimum_teams: Annotated[
-        int, Field(alias="min_rating_teams", default=500)
-    ] = 500
+    default_rating_teams: StrictInt = Field(default=1000)
 
-    rating_maximum_teams: Annotated[
-        int, Field(alias="max_rating_teams", default=5000)
-    ] = (rating_minimum_players * 10)
+    rating_min_players: StrictInt = Field(default=500)
 
-    default_rating_players: Annotated[
-        int, Field(alias="rating_def_players", default=1000)
-    ] = 1000
+    rating_max_players: StrictInt = Field(default=5000)
 
-    default_rating_teams: Annotated[
-        int, Field(alias="rating_def_players", default=1000)
-    ] = 1000
-    
-    
+    rating_min_teams: StrictInt = Field(default=500)
+
+    rating_max_teams: StrictFloat = Field(default=5000)
+
+    rating_weighting: StrictInt = Field(default=50)
+
+    rating_scaling_multiplier: StrictFloat = Field(default=1.0)
