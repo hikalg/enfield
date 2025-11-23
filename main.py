@@ -1,4 +1,4 @@
-from enfield import BasePlayer, BaseTeam, BaseRating, UserSettings, BaseMatch
+from enfield import BasePlayer, BaseTeam, BaseRating, UserSettings, BaseMatch, MatchRating
 
 # from enfield 
 
@@ -14,6 +14,8 @@ rating1 = BaseRating(1500, 1700, 0)
 print(rating1._final_ratings)
 print(rating1.get_final_ratings())
 
+rating2 = MatchRating(match1)
+# print(rating2.model_dump())
 # print(match1.match_score)
 # match1.score(p1=2, p2=4)
 # match1.score(p2=6, override=True)

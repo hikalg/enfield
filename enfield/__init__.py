@@ -8,4 +8,4 @@ from .match import BaseMatch
 
 from .settings import settings as UserSettings
 
-from .rating import BaseRating
+from .rating import BaseRating, MatchRating

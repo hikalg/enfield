@@ -1,18 +1,9 @@
-from enfield import BaseMatch, BasePlayer, BaseTeam, UserSettings
+from enfield import UserSettings
 from pydantic import BaseModel, StrictInt, StrictFloat, Field
-from typing import Annotated, Union, Final
+from typing import Union
 from numpy import median
 
-# HOW THE FUCK DO I CALCULATE RATING? (by hand)
-# (my gf tried to make me horny while writing this script)
-# (but)
-
-# Step 1a: Retrieve the ratings (duh)
-# Step 1b: Find median rating
-# Step 2a: Find ratio against median rating
-# Step 2b: Find ratio against each other
-# Step 2c: Find final ratio
-# Step 3: Apply polarity based on winner
+# TODO:
 
 
 class BaseRating(BaseModel):
@@ -24,7 +15,7 @@ class BaseRating(BaseModel):
 
     scaling: StrictFloat = Field(default=UserSettings.rating_scaling_multiplier)
 
-    def __init__(self, r1, r2, w):
+    def __init__(self, r1 : int, r2 : int, w : int):
         super().__init__(old_ratings=[r1, r2], winner=w)
 
         self._rating_median = self.find_median()
@@ -62,7 +53,7 @@ class BaseRating(BaseModel):
                     else self._rating_ratio_to_other
                 )
             case _:
-                raise ValueError("Invalid type")
+                raise ValueError("Invalid ratio type: accepts either median or against")
 
     def get_polarity(self, slot: int = -1) -> list[int] | int:
         return self._polarity[slot] if slot == (0 or 1) else self._polarity
