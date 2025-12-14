@@ -15,9 +15,9 @@ class BaseRating(BaseModel):
 
     scaling: StrictFloat = Field(default=UserSettings.rating_scaling_multiplier)
 
-    def __init__(self, r1 : int, r2 : int, w : int):
+    def __init__(self, r1: int, r2: int, w: int):
         super().__init__(old_ratings=[r1, r2], winner=w)
-
+        
         self._rating_median = self.find_median()
         self._rating_ratio_to_median = self.find_ratio_to_median()
         self._rating_ratio_to_other = self.find_ratio_to_other()
@@ -38,28 +38,33 @@ class BaseRating(BaseModel):
         return self._rating_median
 
     # Get ratio values. If slot is not 0 or 1 return list
-    def get_ratio(self, type: str = "", slot: int = -1) -> list[float] | float:
-        match type:
-            case "median" | "m":
-                return (
-                    self._rating_ratio_to_median[slot]
-                    if slot == 1 or 2
-                    else self._rating_ratio_to_median
-                )
-            case "against" | "a":
-                return (
-                    self._rating_ratio_to_other[slot]
-                    if slot == 1 or 2
-                    else self._rating_ratio_to_other
-                )
-            case _:
-                raise ValueError("Invalid ratio type: accepts either median or against")
+            
+    def get_ratio_against_median (self, slot : int = -1) -> float:
+        
+        if (slot != 0 or 1):
+            raise ValueError("Invalid player slot provided")
+        
+        return self._rating_ratio_to_median[slot]
+    
+    def get_ratio_against_selves (self, slot : int = -1) -> float:
+        if (slot != 0 or 1):
+            raise ValueError("Invalid player slot provided")
 
-    def get_polarity(self, slot: int = -1) -> list[int] | int:
-        return self._polarity[slot] if slot == (0 or 1) else self._polarity
+        return self._rating_ratio_to_other[slot]
+    
 
-    def get_rating_change(self, slot: int = -1) -> list[int] | int:
-        return self._rating_change[slot] if slot == (0 or 1) else self._rating_change
+    def get_polarity(self, slot: int = -1) -> int:
+        if (slot != 0 or 1):
+            raise ValueError("Invalid player slot provided")
+        
+        return self._polarity[slot]
+
+    def get_rating_change(self, slot: int = -1) -> int:
+        if (slot != 0 or 1):
+            raise ValueError("Invalid player slot provided")
+        
+        return self._rating_change[slot]
+        
 
     def get_final_ratings(self, slot: int = -1):
         return self._final_ratings[slot] if slot == (0 or 1) else self._final_ratings
@@ -119,7 +124,6 @@ class BaseRating(BaseModel):
                 return [0, 0]
 
     def calculate_change(self) -> list:
-
         changes = []
 
         for x in range(len(self.old_ratings)):
@@ -137,16 +141,19 @@ class BaseRating(BaseModel):
         for x in range(len(self.old_ratings)):
             final_rating = self.old_ratings[x] + self._rating_change[x]
 
-        # Apply constraints to calculation results. If override is set to True raw values are returned
-        
+            # Apply constraints to calculation results. If override is set to True raw values are returned
+
             if final_rating > UserSettings.rating_max_players:
                 final_rating = (
-                    UserSettings.rating_max_players if not override_limit else final_rating
+                    UserSettings.rating_max_players
+                    if not override_limit
+                    else final_rating
                 )
-
             if final_rating < UserSettings.rating_min_players:
                 final_rating = (
-                    UserSettings.rating_min_players if not override_limit else final_rating
+                    UserSettings.rating_min_players
+                    if not override_limit
+                    else final_rating
                 )
 
             final_ratings.append(final_rating)
