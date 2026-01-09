@@ -1,4 +1,5 @@
 from enfield import UserSettings
+from ..misc import Result
 from pydantic import BaseModel, StrictInt, StrictFloat, Field
 from typing import Union
 from numpy import median
@@ -9,13 +10,13 @@ from numpy import median
 class BaseRating(BaseModel):
     old_ratings: list[StrictInt] = Field(default=[0, 0])
 
-    winner: StrictInt | StrictFloat = Field()
+    winner: Result = Field()
 
     weighting: StrictInt = Field(default=UserSettings.rating_weighting)
 
     scaling: StrictFloat = Field(default=UserSettings.rating_scaling_multiplier)
 
-    def __init__(self, r1: int, r2: int, w: int):
+    def __init__(self, r1: int, r2: int, w: Result):
         super().__init__(old_ratings=[r1, r2], winner=w)
         
         self._rating_median = self.find_median()
@@ -25,6 +26,9 @@ class BaseRating(BaseModel):
         self._polarity = self.find_polarity()
         self._rating_change = self.calculate_change()
         self._final_ratings = self.calculate_final_rating()
+        
+    def __str__(self) -> str:
+        return f"R0: {self.old_ratings} | R1: {self._final_ratings} | Chg: {self._rating_change} | W: {self.winner} | Med: {self._rating_median} | R/Med: {self._rating_ratio_to_median} | R/R: {self._rating_ratio_to_other} | P: {self._polarity} "
 
     # region Return functions
 
@@ -81,7 +85,7 @@ class BaseRating(BaseModel):
 
         for x in self.old_ratings:
             (
-                ratio_queue.append(x / self._rating_median)
+                ratio_queue.append(round((x / self._rating_median), 2))
                 if (x or self._rating_median) != 0
                 else 0
             )
@@ -96,7 +100,7 @@ class BaseRating(BaseModel):
             rating_1 = self.old_ratings[1]
 
         return (
-            [rating_0 / rating_1, rating_1 / rating_0]
+            [round((rating_0 / rating_1), 2), round((rating_1 / rating_0), 2)]
             if (rating_0 or rating_1) != 0
             else [0, 0]
         )
@@ -107,7 +111,8 @@ class BaseRating(BaseModel):
             final_ratio.append(
                 # Combine ratios to median and against selves, then round to the nearest 2 decimal pts
                 round(
-                    self._rating_ratio_to_median[x] * self._rating_ratio_to_other[x], 2
+                    self._rating_ratio_to_median[x] / self._rating_ratio_to_other[x], 2
+                    # self._rating_ratio_to_median[x] * 1, 2
                 )
             )
 
@@ -116,10 +121,12 @@ class BaseRating(BaseModel):
     def find_polarity(self) -> list:
         # TODO: Figure out polarity logic on draws (0.5). Assume: half polarity (0.5), higher rated player receives negative polarity, and vice versa.
         match self.winner:
-            case 0:
+            case Result.P1:
                 return [1, -1]
-            case 1:
+            case Result.P2:
                 return [-1, 1]
+            case Result.DRAW:
+                return [-0.5, 0.5] if self._higher_rating() == 0 else [0.5, -0.5] if self._higher_rating() == 1 else [0, 0]
             case _:
                 return [0, 0]
 
@@ -161,3 +168,7 @@ class BaseRating(BaseModel):
         return final_ratings
 
     # endregion
+    
+    # region Misc helper functions
+    def _higher_rating(self):
+        return 0 if self.old_ratings[0] > self.old_ratings[1] else 1 if self.old_ratings[0] < self.old_ratings[1] else -1
